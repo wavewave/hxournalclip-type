@@ -6,7 +6,7 @@
              RecordWildCards, 
              FlexibleInstances #-}
 
-module Application.Hxournal.NetworkClipboard.Type where
+module Application.HXournal.NetworkClipboard.Type where
 
 import Control.Applicative 
 import Control.Monad.Reader
@@ -31,7 +31,7 @@ import Data.Aeson.Types hiding (Pair)
 
 import Prelude hiding (fst,snd,foldr)
 
-data HxournalclipInfo = HxournalclipInfo { 
+data HXournalClipInfo = HXournalClipInfo { 
   hxournalclip_uuid :: UUID, 
   hxournalclip_strokes :: [Stroke]
 } deriving (Show,Typeable) -- ,Data)
@@ -74,11 +74,11 @@ instance ToJSON Stroke where
 
                           
     
-instance FromJSON HxournalclipInfo where
-  parseJSON (Object v) = HxournalclipInfo <$>  v .: "uuid" <*> v .: "strokes"
+instance FromJSON HXournalClipInfo where
+  parseJSON (Object v) = HXournalClipInfo <$>  v .: "uuid" <*> v .: "strokes"
 
-instance ToJSON HxournalclipInfo where
-  toJSON (HxournalclipInfo uuid strokes) = object [ "uuid" .= uuid 
+instance ToJSON HXournalClipInfo where
+  toJSON (HXournalClipInfo uuid strokes) = object [ "uuid" .= uuid 
                                                   , "strokes" .= strokes ]   
     
 
@@ -96,37 +96,37 @@ instance SafeCopy (Pair Double Double) where
 
 
 $(deriveSafeCopy 0 'base ''Stroke)
-$(deriveSafeCopy 0 'base ''HxournalclipInfo)
+$(deriveSafeCopy 0 'base ''HXournalClipInfo)
 
 
-type HxournalclipInfoRepository = M.Map UUID HxournalclipInfo 
+type HXournalClipInfoRepository = M.Map UUID HXournalClipInfo 
 
-addHxournalclip :: HxournalclipInfo -> Update HxournalclipInfoRepository HxournalclipInfo 
-addHxournalclip minfo = do 
+addHXournalClip :: HXournalClipInfo -> Update HXournalClipInfoRepository HXournalClipInfo 
+addHXournalClip minfo = do 
   m <- get 
   let (r,m') = M.insertLookupWithKey (\_k _o n -> n) (hxournalclip_uuid minfo) minfo m
   put m'
   return minfo
  
-queryHxournalclip :: UUID -> Query HxournalclipInfoRepository (Maybe HxournalclipInfo) 
-queryHxournalclip uuid = do 
+queryHXournalClip :: UUID -> Query HXournalClipInfoRepository (Maybe HXournalClipInfo) 
+queryHXournalClip uuid = do 
   m <- ask 
   return (M.lookup uuid m)
 
-queryAll :: Query HxournalclipInfoRepository [HxournalclipInfo]
+queryAll :: Query HXournalClipInfoRepository [HXournalClipInfo]
 queryAll = do m <- ask   
               return (M.elems m)
 
 
-updateHxournalclip :: HxournalclipInfo -> Update HxournalclipInfoRepository (Maybe HxournalclipInfo)
-updateHxournalclip minfo = do 
+updateHXournalClip :: HXournalClipInfo -> Update HXournalClipInfoRepository (Maybe HXournalClipInfo)
+updateHXournalClip minfo = do 
   m <- get 
   let (r,m') = M.updateLookupWithKey (\_ _ -> Just minfo) (hxournalclip_uuid minfo) m
   put m'
   maybe (return Nothing) (const (return (Just minfo))) r 
 
-deleteHxournalclip :: UUID -> Update HxournalclipInfoRepository (Maybe HxournalclipInfo)
-deleteHxournalclip uuid = do 
+deleteHXournalClip :: UUID -> Update HXournalClipInfoRepository (Maybe HXournalClipInfo)
+deleteHXournalClip uuid = do 
   m <- get
   let r = M.lookup uuid m  
   case r of 
@@ -137,4 +137,4 @@ deleteHxournalclip uuid = do
     Nothing -> return Nothing
 
 
-$(makeAcidic ''HxournalclipInfoRepository [ 'addHxournalclip, 'queryHxournalclip, 'queryAll, 'updateHxournalclip, 'deleteHxournalclip] )
+$(makeAcidic ''HXournalClipInfoRepository [ 'addHXournalClip, 'queryHXournalClip, 'queryAll, 'updateHXournalClip, 'deleteHXournalClip] )

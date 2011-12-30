@@ -29,4 +29,4 @@ Library
                    strict == 0.3.*, 
                    split == 0.1.*
                    
-  exposed-modules: Application.Hxournal.NetworkClipboard.Type
+  exposed-modules: Application.HXournal.NetworkClipboard.Type
