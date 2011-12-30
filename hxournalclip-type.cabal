@@ -23,5 +23,10 @@ Library
                    acid-state == 0.6.*, 
                    bytestring == 0.9.*, 
                    text == 0.11.*, 
-                   aeson==0.4.*
+                   aeson==0.4.*, 
+                   xournal-types == 0.2.*, 
+                   vector==0.9.*,
+                   strict == 0.3.*, 
+                   split == 0.1.*
+                   
   exposed-modules: Application.Hxournal.NetworkClipboard.Type

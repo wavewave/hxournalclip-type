@@ -2,7 +2,9 @@
              TemplateHaskell, 
              TypeFamilies, 
              TypeSynonymInstances, 
-             OverloadedStrings  #-}
+             OverloadedStrings,   
+             RecordWildCards, 
+             FlexibleInstances #-}
 
 module Application.Hxournal.NetworkClipboard.Type where
 
@@ -20,28 +22,65 @@ import Data.Aeson
 import Data.Text.Encoding as E
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString as B
+import Data.Xournal.Simple
+import qualified Data.Vector as V
+import Data.Strict.Tuple
+import Data.List.Split
+import Data.Foldable 
+import Data.Aeson.Types hiding (Pair)
+
+import Prelude hiding (fst,snd,foldr)
 
 data HxournalclipInfo = HxournalclipInfo { 
   hxournalclip_uuid :: UUID, 
-  hxournalclip_name :: String
-} deriving (Show,Typeable,Data)
+  hxournalclip_strokes :: [Stroke]
+} deriving (Show,Typeable) -- ,Data)
 
 
 instance FromJSON UUID where
-  parseJSON x = do r <- return . fromString . C.unpack . E.encodeUtf8 =<< parseJSON x
-                   case r of 
-                     Nothing -> fail ("UUID parsing failed " ++ show x )
-                     Just uuid -> return uuid 
+  parseJSON x = do 
+    r <- return . fromString . C.unpack . E.encodeUtf8 =<< parseJSON x
+    case r of 
+      Nothing -> fail ("UUID parsing failed " ++ show x )
+      Just uuid -> return uuid 
 
 instance ToJSON UUID where
   toJSON = toJSON . E.decodeUtf8 . C.pack . toString 
 
+instance FromJSON [Pair Double Double] where
+  parseJSON (Array vs) = foldrM worker [] . splitEvery 2 . V.toList $ vs   
+    where worker :: [Value] -> [Pair Double Double] -> Parser [Pair Double Double]
+          worker [] acc = return acc
+          worker [x] acc = return acc
+          worker [x,y] acc =(:acc) <$> ((:!:) <$> parseJSON x <*> parseJSON y)
+          worker _ acc = return acc 
+  parseJSON _ = fail "Error in parsing [Pair Double Double]"
+
+instance ToJSON [Pair Double Double] where   
+  toJSON = Array . V.fromList . foldr (\x acc -> toJSON (fst x) : toJSON (snd x) : acc) [] 
+
+
+instance FromJSON Stroke where
+  parseJSON (Object v) = Stroke <$> v .: "tool" 
+                                <*> v .: "color" 
+                                <*> v .: "width" 
+                                <*> v .: "data"
+
+instance ToJSON Stroke where
+  toJSON Stroke{..} = object [ "tool"  .= toJSON stroke_tool
+                             , "color" .= toJSON stroke_color
+                             , "width" .= toJSON stroke_width
+                             , "data"  .= toJSON stroke_data ] 
+
+                          
+    
 instance FromJSON HxournalclipInfo where
-  parseJSON (Object v) = HxournalclipInfo <$>  v .: "uuid" <*> v .: "name"
+  parseJSON (Object v) = HxournalclipInfo <$>  v .: "uuid" <*> v .: "strokes"
 
 instance ToJSON HxournalclipInfo where
-  toJSON (HxournalclipInfo uuid name) = object [ "uuid" .= uuid , "name" .= name ] 
-
+  toJSON (HxournalclipInfo uuid strokes) = object [ "uuid" .= uuid 
+                                                  , "strokes" .= strokes ]   
+    
 
 instance SafeCopy UUID where 
   putCopy uuid = contain $ safePut (toByteString uuid) 
@@ -49,7 +88,16 @@ instance SafeCopy UUID where
             $ maybe (fail "cannot parse UUID") return . fromByteString 
               =<< safeGet
 
+instance SafeCopy (Pair Double Double) where
+  putCopy (x :!: y) = contain $ safePut (x,y)
+  getCopy = contain $ do  
+              (x,y) <- safeGet 
+              return (x :!: y)
+
+
+$(deriveSafeCopy 0 'base ''Stroke)
 $(deriveSafeCopy 0 'base ''HxournalclipInfo)
+
 
 type HxournalclipInfoRepository = M.Map UUID HxournalclipInfo 
 
