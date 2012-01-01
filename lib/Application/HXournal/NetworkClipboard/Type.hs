@@ -11,6 +11,8 @@ module Application.HXournal.NetworkClipboard.Type where
 import Control.Applicative 
 import Control.Monad.Reader
 import Control.Monad.State
+
+import Data.Maybe
 import Data.Typeable
 import Data.Data
 import Data.SafeCopy
@@ -99,26 +101,37 @@ $(deriveSafeCopy 0 'base ''Stroke)
 $(deriveSafeCopy 0 'base ''HXournalClipInfo)
 
 
-type HXournalClipInfoRepository = M.Map UUID HXournalClipInfo 
+data HXournalClipInfoRepository = HXournalClipInfoRepository 
+    { clipinfoqueue :: [UUID]
+    , clipinfomap::  M.Map UUID HXournalClipInfo 
+    } 
 
-addHXournalClip :: HXournalClipInfo -> Update HXournalClipInfoRepository HXournalClipInfo 
+$(deriveSafeCopy 0 'base ''HXournalClipInfoRepository)
+
+addHXournalClip :: HXournalClipInfo 
+                -> Update HXournalClipInfoRepository HXournalClipInfo 
 addHXournalClip minfo = do 
-  m <- get 
-  let (r,m') = M.insertLookupWithKey (\_k _o n -> n) (hxournalclip_uuid minfo) minfo m
-  put m'
+  HXournalClipInfoRepository q m <- get 
+  let uuid = hxournalclip_uuid minfo 
+  let (r,m') = M.insertLookupWithKey (\_k _o n -> n) uuid minfo m
+  let q' = maybe q (const (uuid : q)) r 
+  put (HXournalClipInfoRepository q' m')
   return minfo
  
-queryHXournalClip :: UUID -> Query HXournalClipInfoRepository (Maybe HXournalClipInfo) 
+queryHXournalClip :: UUID 
+                  -> Query HXournalClipInfoRepository (Maybe HXournalClipInfo) 
 queryHXournalClip uuid = do 
-  m <- ask 
+  HXournalClipInfoRepository q m <- ask 
   return (M.lookup uuid m)
 
 queryAll :: Query HXournalClipInfoRepository [HXournalClipInfo]
-queryAll = do m <- ask   
-              return (M.elems m)
+queryAll = do HXournalClipInfoRepository q m <- ask  
+              return (mapMaybe (flip M.lookup m) q)  
+--              return q -- (M.elems m)
 
-
-updateHXournalClip :: HXournalClipInfo -> Update HXournalClipInfoRepository (Maybe HXournalClipInfo)
+{-
+updateHXournalClip :: HXournalClipInfo 
+                   -> Update HXournalClipInfoRepository (Maybe HXournalClipInfo)
 updateHXournalClip minfo = do 
   m <- get 
   let (r,m') = M.updateLookupWithKey (\_ _ -> Just minfo) (hxournalclip_uuid minfo) m
@@ -138,3 +151,6 @@ deleteHXournalClip uuid = do
 
 
 $(makeAcidic ''HXournalClipInfoRepository [ 'addHXournalClip, 'queryHXournalClip, 'queryAll, 'updateHXournalClip, 'deleteHXournalClip] )
+-}
+
+$(makeAcidic ''HXournalClipInfoRepository [ 'addHXournalClip, 'queryHXournalClip, 'queryAll ] )
