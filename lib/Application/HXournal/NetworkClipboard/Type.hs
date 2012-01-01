@@ -104,7 +104,7 @@ $(deriveSafeCopy 0 'base ''HXournalClipInfo)
 data HXournalClipInfoRepository = HXournalClipInfoRepository 
     { clipinfoqueue :: [UUID]
     , clipinfomap::  M.Map UUID HXournalClipInfo 
-    } 
+    } deriving (Show,Typeable)
 
 $(deriveSafeCopy 0 'base ''HXournalClipInfoRepository)
 
@@ -114,7 +114,7 @@ addHXournalClip minfo = do
   HXournalClipInfoRepository q m <- get 
   let uuid = hxournalclip_uuid minfo 
   let (r,m') = M.insertLookupWithKey (\_k _o n -> n) uuid minfo m
-  let q' = maybe q (const (uuid : q)) r 
+  let q' = uuid : q
   put (HXournalClipInfoRepository q' m')
   return minfo
  
