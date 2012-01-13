@@ -20,6 +20,7 @@ import qualified Data.Map as M
 
 import Data.Acid 
 import Data.UUID
+import Data.UUID.Instances
 import Data.Aeson
 import Data.Text.Encoding as E
 import qualified Data.ByteString.Char8 as C
@@ -38,7 +39,7 @@ data HXournalClipInfo = HXournalClipInfo {
   hxournalclip_strokes :: [Stroke]
 } deriving (Show,Typeable) -- ,Data)
 
-
+{-
 instance FromJSON UUID where
   parseJSON x = do 
     r <- return . fromString . C.unpack . E.encodeUtf8 =<< parseJSON x
@@ -47,7 +48,7 @@ instance FromJSON UUID where
       Just uuid -> return uuid 
 
 instance ToJSON UUID where
-  toJSON = toJSON . E.decodeUtf8 . C.pack . toString 
+  toJSON = toJSON . E.decodeUtf8 . C.pack . toString -}
 
 instance FromJSON [Pair Double Double] where
   parseJSON (Array vs) = foldrM worker [] . splitEvery 2 . V.toList $ vs   
@@ -83,12 +84,13 @@ instance ToJSON HXournalClipInfo where
   toJSON (HXournalClipInfo uuid strokes) = object [ "uuid" .= uuid 
                                                   , "strokes" .= strokes ]   
     
-
+{-
 instance SafeCopy UUID where 
   putCopy uuid = contain $ safePut (toByteString uuid) 
   getCopy = contain 
             $ maybe (fail "cannot parse UUID") return . fromByteString 
               =<< safeGet
+-}
 
 instance SafeCopy (Pair Double Double) where
   putCopy (x :!: y) = contain $ safePut (x,y)
