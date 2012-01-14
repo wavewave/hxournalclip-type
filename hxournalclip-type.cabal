@@ -27,6 +27,7 @@ Library
                    xournal-types == 0.2.*, 
                    vector==0.9.*,
                    strict == 0.3.*, 
-                   split == 0.1.*
+                   split == 0.1.*, 
+                   uuid-instance >= 0.0.999 && < 0.2 
                    
   exposed-modules: Application.HXournal.NetworkClipboard.Type
